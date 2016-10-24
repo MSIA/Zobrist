@@ -1,0 +1,31 @@
+
+
+
+WITH Tz AS
+
+(SELECT J.guid as jobID, substr(J.location,1,2) as JOB_loc, J.title as JOB_title, L.region_name as Click_Location, count(L.user_id) as Clicks
+FROM clickstream.new J
+  INNER JOIN clickstream.log_loc L ON J.guid=L.job_id
+WHERE L.country_code = 'US'
+  AND L.user_id NOT IN (select user_id from clickstream.robot_user)
+GROUP BY J.guid, J.location, J.title, L.region_name
+HAVING count(L.user_id) > 10
+ORDER BY Clicks DESC),
+
+FIVEplusJOBS as (select jobID, count(JOB_loc) as X FROM Tz GROUP BY jobID HAVING count(JOB_loc) > 4)
+
+
+  SELECT Tz.jobID, Tz.JOB_title, Tz.JOB_loc AS LOCATION, NULL as ClickCount, TZ.JOB_loc||'.'||TZ.Click_Location AS pathID, 1 AS PathOrder
+  FROM Tz
+  WHERE Tz.jobID IN (select jobID from FIVEplusJOBS)
+
+
+  UNION
+
+  SELECT Tz.jobID, Tz.JOB_title, Tz.Click_Location AS LOCATION, TZ.Clicks AS ClickCount, TZ.JOB_loc||'.'||TZ.Click_Location AS pathID, 2 AS PathOrder
+  FROM Tz
+  WHERE Tz.jobID IN (select jobID from FIVEplusJOBS)
+
+;
+
+
