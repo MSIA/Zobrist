@@ -7,7 +7,6 @@ PostingLength <- read.table('JobPostings2/Unemployment by City/PostLengths100.tx
 PostingLength$location <- gsub('-',' ', PostingLength$location)
 PostingLength$location <- gsub('Metropolitan','', PostingLength$location)
 
-
 # Read in unemployment rate by city, eliminate extraneous word then rearrange City so that state comes first 
   # http://www.bls.gov/lau/lamtrk14.htm
 Unemployment <- read.table('JobPostings2/Unemployment by City/UnemploymentByMetro.csv', sep = ',' , fill = T, stringsAsFactors = F, header = T)
@@ -17,6 +16,8 @@ Unemployment$City <- gsub('Area','', Unemployment$City)
 x <- read.csv(textConnection(Unemployment[["City"]]),header = F)
 colnames(x) <- c('CityName',"State")
 Unemployment$City <- paste(trimws(x$State), trimws(x$CityName))
+Unemployment$State <- as.factor(trimws(x$State))
+
 
 ######################## Function for finding closest match using levenshtein disance ##############
 library(RecordLinkage)
@@ -44,5 +45,15 @@ with(Unemployment[Unemployment$Rate<15,],plot(Rate,AvgPost, xlab = 'Unemployment
 with(Unemployment[Unemployment$Rate<15,],cor(Rate,AvgPost))
 
 
+stateList <- levels(Unemployment$State)
+stateList <- stateList[nchar(stateList)<3]
+stateList <- stateList[length(Unemployment[Unemployment$State==stateList,'State'])>3]
 
-                       
+for (i in 1:(length(stateList))){
+  if ( length(Unemployment[Unemployment$State==stateList[i],'State']) >3){
+  plot(Unemployment[Unemployment$State==stateList[i],'Rate'], Unemployment[Unemployment$State==stateList[i],'AvgPost'], xlab = 'Unemployment Rate', ylab = 'Avg Posting Duration')
+  title(main = stateList[i])
+  print(paste(stateList[i], cor(Unemployment[Unemployment$State==stateList[i],'Rate'], Unemployment[Unemployment$State==stateList[i],'AvgPost']) ) )
+      }
+  }
+
